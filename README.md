@@ -1,0 +1,30 @@
+eprint-iacr-notifier
+====================
+
+Daily email reminders with the newest Cryptology ePrint Archive papers.
+
+Just install the Python script as a cronjob and forget about it.
+
+## TODO
+
+For now, the script uses a throwaway Gmail account to send emails, because it was the easiest way to get this running. This should be made more flexible.
+
+## Installation
+
+First, install dependencies:
+
+    ./install-deps.sh
+
+Then, [create a dummy Gmail account](https://gmail.com) that you do not care about.
+Importantly, activate ["less secure apps" mode](https://myaccount.google.com/lesssecureapps), so it can be used by the script to send emails.
+**WARNING:** The password of this account will show up in your syslog, so don't use your actual Gmail account.
+
+Second, run the following:
+
+    ./add-cron-job.sh
+
+The script will ask you which paper you've read last, what email address you want to be notified at and the credentials of the dummy Gmail account used to send the notifications.
+
+## Pull requests
+
+...that fix bugs are very welcome.
