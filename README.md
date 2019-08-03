@@ -1,7 +1,7 @@
 eprint-iacr-notifier
 ====================
 
-Daily email reminders with the newest Cryptology ePrint Archive papers.
+Daily email reminders with the newest [Cryptology ePrint Archive](https://eprint.iacr.org/eprint-bin/search.pl?last=365&title=1) papers.
 
 Just install the Python script as a cronjob and forget about it.
 
