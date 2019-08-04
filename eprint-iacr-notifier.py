@@ -98,8 +98,8 @@ soup = BeautifulSoup(index_html, parser)
 #print "New paper IDs:"
 skipped = []    # keep track of skipped links, for debugging purposes
 new_last_paper_id = last_paper_id
-email_html="New papers have been published on the Cryptology ePrint Archive!<br /><br />\n"
-email_text="New papers have been published on the Cryptology ePrint Archive!\n\n"
+email_html="Hey there,<br /><br />\nNew papers have been published on the Cryptology ePrint Archive!<br /><br />\n"
+email_text="Hey there,\n\nNew papers have been published on the Cryptology ePrint Archive!\n\n"
 for link in soup.find_all('a'):
     link = link.get('href')
     # links will be of the form /<year>/<paper-id> and /<year>/<paper-id>.pdf
@@ -138,6 +138,8 @@ for link in soup.find_all('a'):
 
 # if there were new papers, email them to the right person
 if new_last_paper_id > last_paper_id:
+    email_text += "Cheers,\nThe Crypto eprint whisperer\n\nMay Alice and Bob forever talk securely."
+    email_html += "Cheers,<br />\nThe Crypto eprint whisperer<br /><br/>\n<i>May the hardness of discrete log forever be with you.</i>"
     email_html = email_html.encode('utf-8').strip()
     email_text = email_text.encode('utf-8').strip()
 
@@ -149,9 +151,13 @@ if new_last_paper_id > last_paper_id:
 
     # craft MIME email
     mime_email = MIMEMultipart('alternative')
-    mime_email['Subject'] = 'New Crypto ePrints: ' + str(year) + '/' + str(last_paper_id + 1)
+    subj = 'New Crypto ePrints: ' + str(year) + '/' + str(last_paper_id + 1)
+    # WARNING: Updating mime_email['Subject'] with += or setting it twice with = results in two different subjects for the same email
+    # when we notify two email addresses. This is why we only set it once with an if statement.
     if new_last_paper_id > last_paper_id + 1:
-        mime_email['Subject'] += ' to ' + str(year) + '/' + str(new_last_paper_id)
+        mime_email['Subject'] = subj + ' to ' + str(year) + '/' + str(new_last_paper_id)
+    else:
+        mime_email['Subject'] = subj
     mime_email['From'] = sender_gmail_addr;
     mime_email['To'] = notified_email;
     mime_email.attach(MIMEText(email_text, 'plain'))
@@ -167,7 +173,7 @@ if new_last_paper_id > last_paper_id:
             mime_email.as_string())
         server.quit()
 
-        print "Sent email successfully to:", notified_email
+        print "Sent email with title '" + mime_email['Subject'] + "' successfully to:", notified_email
     else:
         print "Simulating, so no email was sent."
 
