@@ -61,7 +61,7 @@ def test_gmail(username, passwd):
     server.quit()
 
 if len(sys.argv) < 5:
-    print "Usage:", sys.argv[0], "<notified-email-address> <sender-Gmail-address> <sender-Gmail-password> <conf-file>"
+    print "Usage:", sys.argv[0], "<notified-email-address[,extra addresses]> <sender-Gmail-address> <sender-Gmail-password> <conf-file>"
     sys.exit(1)
 
 notified_email = sys.argv[1]
@@ -75,7 +75,7 @@ test_gmail(sender_gmail_username, sender_gmail_passw)
 parser = "lxml"
 
 # open file for both reading and writing
-f = open(conf_file, "rw+")
+f = open(conf_file, "r+")
 # read year from file
 year = int(f.readline())
 # read last paper's ID from file
@@ -163,7 +163,7 @@ if new_last_paper_id > last_paper_id:
         server.login(sender_gmail_username, sender_gmail_passw);
         server.sendmail(
             sender_gmail_addr,
-            notified_email,
+            notified_email.split(","),
             mime_email.as_string())
         server.quit()
 
