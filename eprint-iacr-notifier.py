@@ -138,8 +138,10 @@ for link in soup.find_all('a'):
 
 # if there were new papers, email them to the right person
 if new_last_paper_id > last_paper_id:
-    email_text += "Cheers,\nThe Crypto eprint whisperer\n\nMay Alice and Bob forever talk securely."
-    email_html += "Cheers,<br />\nThe Crypto eprint whisperer<br /><br/>\n<i>May the hardness of discrete log forever be with you.</i>"
+    email_text += "Cheers,\nThe Crypto eprint whisperer\nhttps://github.com/alinush/eprint-iacr-notifier\n\nMay Alice and Bob forever talk securely."
+    email_html += "Cheers,<br />\nThe Crypto eprint whisperer<br/>\n"
+    email_html += "GitHub: <a href=\"https://github.com/alinush/eprint-iacr-notifier\">https://github.com/alinush/eprint-iacr-notifier</a><br /><br/>\n"
+    email_html += "<i>May the hardness of discrete log forever be with you.</i>"
     email_html = email_html.encode('utf-8').strip()
     email_text = email_text.encode('utf-8').strip()
 
