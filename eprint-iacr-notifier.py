@@ -3,17 +3,12 @@
 from bs4 import BeautifulSoup
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from pprint import pprint
 
+import bs4
 import urllib2
 import sys
 import smtplib
-
-# please set to true when you are debugging and you don't want to send emails
-simulate_email=False
-#simulate_email=True
-# please set to true when you are debugging and you don't want to update the conf file with the latest paper ID
-simulate_conf_update=False
-#simulate_conf_update=True
 
 def get_url(url):
     print "Downloading page at", url, "...",
@@ -23,7 +18,7 @@ def get_url(url):
     return html
 
 def dedup_spaces(string):
-    return " ".join(string.split())
+    return " ".join(string.split()).strip()
 
 def process_paper(base_url, paper_id, parser):
     url = base_url + str(paper_id)
@@ -37,13 +32,33 @@ def process_paper(base_url, paper_id, parser):
     
     title = dedup_spaces(title)
     authors = dedup_spaces(authors.text)
-    # TODO: for some papers, after <b>Abstract:</b> there could be tags like <p /> in the abstract itself (see https://eprint.iacr.org/2019/868 for example) which means bs[1].next_sibling won't get the full abstract
-    #print "bs[1]:", bs[1]
-    #print "bs[1].next_sibling:", bs[1].next_sibling
-    #print "bs[1].next_sibling.next_sibling:", bs[1].next_sibling.next_sibling
-    #print "bs[1].next_sibling.next_sibling.next_sibling:", bs[1].next_sibling.next_sibling.next_sibling
-    #print "bs[1].next_sibling.next_sibling.next_sibling.next_sibling:", bs[1].next_sibling.next_sibling.next_sibling.next_sibling
-    abstract = dedup_spaces(bs[1].next_sibling)
+
+    # For some papers, after <b>Abstract:</b> there could be tags like <p /> in the abstract itself (see https://eprint.iacr.org/2019/868 for example).
+    # This means bs[1].next_sibling won't get the full abstract, so we have to keep iterating.
+    first_paragraph = bs[1].next_sibling
+    # first_paragraph.parent is the <body> tag
+    # bs[1] is a Tag object and bs[1].next_sibling is a NavigableString
+
+    assert(type(first_paragraph) is bs4.element.NavigableString)
+    abstract = dedup_spaces(first_paragraph)
+
+    curr_paragraph = first_paragraph.next_sibling
+    while True:  # the next <b> tag is for "Category / Keywords"
+        assert(type(first_paragraph) is bs4.element.NavigableString or type(first_paragraph) is bs4.element.Tag)
+
+        if type(curr_paragraph) is bs4.element.Tag:
+            par = dedup_spaces(str(curr_paragraph.get_text()))
+        else:
+            par = dedup_spaces(str(curr_paragraph))
+
+        if par == "Category / Keywords:":
+            break
+
+        if len(par) > 0:
+            abstract += "\n\n" + par
+
+        curr_paragraph = curr_paragraph.next_sibling
+
     pdflink = url + ".pdf"
     
     #print " * Title:", title
@@ -60,17 +75,43 @@ def test_gmail(username, passwd):
     server.login(username, passwd);
     server.quit()
 
-if len(sys.argv) < 5:
-    print "Usage:", sys.argv[0], "<notified-email-address[,extra addresses]> <sender-Gmail-address> <sender-Gmail-password> <conf-file>"
+# delete's the script's name
+script_name = sys.argv[0]
+del sys.argv[0]
+
+if len(sys.argv) < 4:
+    print "Usage:", script_name, "<notified-email-address[,extra addresses]> <sender-Gmail-address> <sender-Gmail-password> <conf-file> [<only-simulate-email>] [<do-not-update-conf>]"
     sys.exit(1)
 
-notified_email = sys.argv[1]
-sender_gmail_addr = sys.argv[2]
+notified_email = sys.argv[0]
+del sys.argv[0]
+sender_gmail_addr = sys.argv[0]
 sender_gmail_username = sender_gmail_addr.split("@")[0]
-sender_gmail_passw = sys.argv[3]
-conf_file = sys.argv[4]
+del sys.argv[0]
+sender_gmail_passw = sys.argv[0]
+del sys.argv[0]
+conf_file = sys.argv[0]
+del sys.argv[0]
 
-test_gmail(sender_gmail_username, sender_gmail_passw)
+# please set to true when you are debugging and you don't want to send emails
+simulate_email=False
+# please set to true when you are debugging and you don't want to update the conf file with the latest paper ID
+simulate_conf_update=False
+
+if len(sys.argv) > 0:
+    simulate_email=(sys.argv[0].lower() == "true" or sys.argv[0] == "1")
+    del sys.argv[0]
+    print "Simulate email sending?", simulate_email
+
+    if len(sys.argv) > 0:
+        simulate_conf_update=(sys.argv[0].lower() == "true" or sys.argv[0] == "1")
+        del sys.argv[0]
+        print "Do NOT update conf?", simulate_conf_update
+
+    print
+
+if simulate_email == False:
+    test_gmail(sender_gmail_username, sender_gmail_passw)
 
 parser = "lxml"
 
@@ -100,7 +141,8 @@ skipped = []    # keep track of skipped links, for debugging purposes
 new_last_paper_id = last_paper_id
 email_html="Hey there,<br /><br />\nNew papers have been published on the Cryptology ePrint Archive!<br /><br />\n"
 email_text="Hey there,\n\nNew papers have been published on the Cryptology ePrint Archive!\n\n"
-for link in soup.find_all('a'):
+firstPaper = True
+for link in reversed(soup.find_all('a')):
     link = link.get('href')
     # links will be of the form /<year>/<paper-id> and /<year>/<paper-id>.pdf
     split = link.split(".")
@@ -126,22 +168,32 @@ for link in soup.find_all('a'):
         new_last_paper_id = max(paper_id, new_last_paper_id)
             
         email_html += "\n"
-        email_html += "<b>Title:</b> " + title + " (" + str(paper_id) + " <a href=\"" + pdflink + "\">PDF</a>)<br />\n";
-        email_html += "<b>Authors:</b> " + authors + "<br />\n";
-        email_html += "<b><a href=\"" + url + str(paper_id) + "\">Abstract</a>:</b> " + abstract + "<br /><br />\n";
+        if firstPaper == False:
+            email_html += "<hr /><br />\n"
+        email_html += "<b>Title:</b> " + title + " (" + str(paper_id) + " <a href=\"" + pdflink + "\">PDF</a>)<br />\n"
+        email_html += "<b>Authors:</b> " + authors + "<br />\n"
+        email_html += "<b><a href=\"" + url + str(paper_id) + "\">Abstract</a>:</b> " + abstract.replace("\n\n", "<br /><br />\n\n") + "<br /><br />\n"
 
         email_text += "\n"
-        email_text += "Title: " + title + "\n";
-        email_text += "Authors:  " + authors + "\n";
-        email_text += "Link: " + pdflink + "\n";
-        email_text += "Abstract: " + abstract + "\n\n";
+        email_text += "Title: " + title + "\n"
+        email_text += "Authors:  " + authors + "\n"
+        email_text += "Link: " + pdflink + "\n"
+        email_text += "Abstract: " + abstract + "\n\n"
+        email_text += "-----------------"
+        email_text += "\n\n"
+
+        firstPaper = False
+
 
 # if there were new papers, email them to the right person
 if new_last_paper_id > last_paper_id:
     email_text += "Cheers,\nThe Crypto eprint whisperer\nhttps://github.com/alinush/eprint-iacr-notifier\n\nMay Alice and Bob forever talk securely."
+
+    email_html += "\n"
     email_html += "Cheers,<br />\nThe Crypto eprint whisperer<br/>\n"
     email_html += "GitHub: <a href=\"https://github.com/alinush/eprint-iacr-notifier\">https://github.com/alinush/eprint-iacr-notifier</a><br /><br/>\n"
     email_html += "<i>May the hardness of discrete log forever be with you.</i>"
+
     email_html = email_html.encode('utf-8').strip()
     email_text = email_text.encode('utf-8').strip()
 

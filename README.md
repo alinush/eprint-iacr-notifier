@@ -28,3 +28,7 @@ The script will ask you which paper you've read last, what email address you wan
 ## Pull requests
 
 ...that fix bugs are very welcome.
+
+## Other IACR ePrint tools
+
+Check out my labmate's Zack Newman [`iacr-dl` Python tool](https://github.com/znewman01/iacr-dl) also which provides a nice Python API for downloading eprint papers.
