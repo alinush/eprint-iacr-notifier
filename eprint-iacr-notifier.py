@@ -6,9 +6,10 @@ from email.mime.text import MIMEText
 from pprint import pprint
 
 import bs4
-import urllib2
-import sys
+import datetime
 import smtplib
+import sys
+import urllib2
 
 def get_url(url):
     print "Downloading page at", url, "...",
@@ -104,6 +105,9 @@ sender_gmail_passw = sys.argv[0]
 del sys.argv[0]
 conf_file = sys.argv[0]
 del sys.argv[0]
+
+now = datetime.datetime.now()
+print "Time:", now.strftime("%Y-%m-%d %H:%M")
 
 # please set to true when you are debugging and you don't want to send emails
 simulate_email=False
