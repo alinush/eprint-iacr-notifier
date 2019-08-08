@@ -18,10 +18,18 @@ def get_url(url):
     return html
 
 def dedup_spaces(string):
-    return " ".join(string.split()).strip()
+    return u" ".join(string.split()).strip()
+
+# paper IDs in URLs need to be padded with zeros
+# e.g., 1 should be 001
+def format_paper_id(paper_id):
+    if paper_id >= 100:
+        return str(paper_id)
+    else:
+        return "{:03d}".format(paper_id)
 
 def process_paper(base_url, paper_id, parser):
-    url = base_url + str(paper_id)
+    url = base_url + format_paper_id(paper_id)
     paper_html = get_url(url)
 
     soup = BeautifulSoup(paper_html, parser)
@@ -47,15 +55,19 @@ def process_paper(base_url, paper_id, parser):
         assert(type(first_paragraph) is bs4.element.NavigableString or type(first_paragraph) is bs4.element.Tag)
 
         if type(curr_paragraph) is bs4.element.Tag:
-            par = dedup_spaces(str(curr_paragraph.get_text()))
+            par = dedup_spaces(curr_paragraph.get_text())
+        elif type(curr_paragraph) is bs4.element.NavigableString:
+            par = dedup_spaces(curr_paragraph)
         else:
-            par = dedup_spaces(str(curr_paragraph))
+            print "ERROR: I need to better understand BeautifoulSoup"
+            sys.exit(1)
 
         if par == "Category / Keywords:":
             break
 
         if len(par) > 0:
-            abstract += "\n\n" + par
+            assert(type(par) is unicode)
+            abstract += u"\n\n" + par
 
         curr_paragraph = curr_paragraph.next_sibling
 
@@ -139,8 +151,8 @@ soup = BeautifulSoup(index_html, parser)
 #print "New paper IDs:"
 skipped = []    # keep track of skipped links, for debugging purposes
 new_last_paper_id = last_paper_id
-email_html="Hey there,<br /><br />\nNew papers have been published on the Cryptology ePrint Archive!<br /><br />\n"
-email_text="Hey there,\n\nNew papers have been published on the Cryptology ePrint Archive!\n\n"
+email_html=u"Hey there,<br /><br />\nNew papers have been published on the Cryptology ePrint Archive!<br /><br />\n"
+email_text=u"Hey there,\n\nNew papers have been published on the Cryptology ePrint Archive!\n\n"
 firstPaper = True
 for link in reversed(soup.find_all('a')):
     link = link.get('href')
@@ -157,6 +169,7 @@ for link in reversed(soup.find_all('a')):
     split = split[0]
     paper_id = split.split("/")
     if len(paper_id) != 3:
+        #print "Skipped non-paper link: " + link
         skipped.append(link)
         continue;
 
@@ -167,35 +180,35 @@ for link in reversed(soup.find_all('a')):
         title, authors, abstract, pdflink = process_paper(url, paper_id, parser)
         new_last_paper_id = max(paper_id, new_last_paper_id)
             
-        email_html += "\n"
+        email_html += u"\n"
         if firstPaper == False:
-            email_html += "<hr /><br />\n"
-        email_html += "<b>Title:</b> " + title + " (" + str(paper_id) + " <a href=\"" + pdflink + "\">PDF</a>)<br />\n"
-        email_html += "<b>Authors:</b> " + authors + "<br />\n"
-        email_html += "<b><a href=\"" + url + str(paper_id) + "\">Abstract</a>:</b> " + abstract.replace("\n\n", "<br /><br />\n\n") + "<br /><br />\n"
+            email_html += u"<hr /><br />\n"
+        email_html += u"<b>Title:</b> " + title + " (" + format_paper_id(paper_id) + " <a href=\"" + pdflink + "\">PDF</a>)<br />\n"
+        email_html += u"<b>Authors:</b> " + authors + "<br />\n"
+        email_html += u"<b><a href=\"" + url + format_paper_id(paper_id) + "\">Abstract</a>:</b> " + abstract.replace("\n\n", "<br /><br />\n\n") + "<br /><br />\n"
 
-        email_text += "\n"
-        email_text += "Title: " + title + "\n"
-        email_text += "Authors:  " + authors + "\n"
-        email_text += "Link: " + pdflink + "\n"
-        email_text += "Abstract: " + abstract + "\n\n"
-        email_text += "-----------------"
-        email_text += "\n\n"
+        email_text += u"\n"
+        email_text += u"Title: " + title + "\n"
+        email_text += u"Authors:  " + authors + "\n"
+        email_text += u"Link: " + pdflink + "\n"
+        email_text += u"Abstract: " + abstract + "\n\n"
+        email_text += u"-----------------"
+        email_text += u"\n\n"
 
         firstPaper = False
 
 
 # if there were new papers, email them to the right person
 if new_last_paper_id > last_paper_id:
-    email_text += "Cheers,\nThe Crypto eprint whisperer\nhttps://github.com/alinush/eprint-iacr-notifier\n\nMay Alice and Bob forever talk securely."
+    email_text += u"Cheers,\nThe Crypto eprint whisperer\nhttps://github.com/alinush/eprint-iacr-notifier\n\nMay Alice and Bob forever talk securely."
 
-    email_html += "\n"
-    email_html += "Cheers,<br />\nThe Crypto eprint whisperer<br/>\n"
-    email_html += "GitHub: <a href=\"https://github.com/alinush/eprint-iacr-notifier\">https://github.com/alinush/eprint-iacr-notifier</a><br /><br/>\n"
-    email_html += "<i>May the hardness of discrete log forever be with you.</i>"
+    email_html += u"\n"
+    email_html += u"Cheers,<br />\nThe Crypto eprint whisperer<br/>\n"
+    email_html += u"GitHub: <a href=\"https://github.com/alinush/eprint-iacr-notifier\">https://github.com/alinush/eprint-iacr-notifier</a><br /><br/>\n"
+    email_html += u"<i>May the hardness of discrete log forever be with you.</i>"
 
-    email_html = email_html.encode('utf-8').strip()
-    email_text = email_text.encode('utf-8').strip()
+    email_html = email_html.strip()
+    email_text = email_text.strip()
 
     print
     print "Emailing " + notified_email + ":"
@@ -205,17 +218,17 @@ if new_last_paper_id > last_paper_id:
 
     # craft MIME email
     mime_email = MIMEMultipart('alternative')
-    subj = 'New Crypto ePrints: ' + str(year) + '/' + str(last_paper_id + 1)
+    subj = 'New Crypto ePrints: ' + str(year) + '/' + format_paper_id(last_paper_id + 1)
     # WARNING: Updating mime_email['Subject'] with += or setting it twice with = results in two different subjects for the same email
     # when we notify two email addresses. This is why we only set it once with an if statement.
     if new_last_paper_id > last_paper_id + 1:
-        mime_email['Subject'] = subj + ' to ' + str(year) + '/' + str(new_last_paper_id)
+        mime_email['Subject'] = subj + ' to ' + str(year) + '/' + format_paper_id(new_last_paper_id)
     else:
         mime_email['Subject'] = subj
     mime_email['From'] = sender_gmail_addr;
     mime_email['To'] = notified_email;
-    mime_email.attach(MIMEText(email_text, 'plain'))
-    mime_email.attach(MIMEText(email_html, 'html'))
+    mime_email.attach(MIMEText(email_text, 'plain', 'utf-8'))
+    mime_email.attach(MIMEText(email_html, 'html', 'utf-8'))
 
     # connect to Gmail and send
     if simulate_email == False:
