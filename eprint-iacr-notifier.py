@@ -217,7 +217,8 @@ if new_last_paper_id > last_paper_id:
     print
     print "Emailing " + notified_email + ":"
     print
-    print email_html
+    # Must encode to UTF8 before printing. Otherwise some Unicode strings will print fine to stdout, but not when redirected to a file.
+    print email_html.encode('utf-8')
     print
 
     # craft MIME email
