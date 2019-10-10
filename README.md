@@ -7,7 +7,8 @@ Just install the Python script as a cronjob and forget about it.
 
 ## TODO
 
-For now, the script uses a throwaway Gmail account to send emails, because it was the easiest way to get this running. This should be made more flexible.
+ - https://eprint.iacr.org/2019/1172 has a ``<`` sign in the abstract that throws off our parser
+ - For now, the script uses a throwaway Gmail account to send emails, because it was the easiest way to get this running. This should be made more flexible.
 
 ## Installation
 
