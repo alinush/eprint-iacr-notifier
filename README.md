@@ -9,9 +9,11 @@ Just install the Python script as a cronjob and forget about it.
 
  - https://eprint.iacr.org/2019/1172 has a ``<`` sign in the abstract that throws off our parser
  - For now, the script uses a throwaway Gmail account to send emails, because it was the easiest way to get this running. This should be made more flexible.
+ - Better logging library
 
-## Installation
+## Installation (as a cron job)
 
+This works both in Ubuntu Linux (via /etc/cron.d/) and on OS X (via launchctl).
 First, install dependencies:
 
     ./install-deps.sh
@@ -25,6 +27,12 @@ Second, run the following:
     ./add-cron-job.sh
 
 The script will ask you which paper you've read last, what email address you want to be notified at and the credentials of the dummy Gmail account used to send the notifications.
+
+### OS X
+
+Useful commands:
+
+    launchctl list | grep eprint
 
 ## Pull requests
 
