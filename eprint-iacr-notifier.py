@@ -108,6 +108,7 @@ del sys.argv[0]
 
 now = datetime.datetime.now()
 print "Time:", now.strftime("%Y-%m-%d %H:%M")
+print "Notified email(s):", notified_email
 
 # please set to true when you are debugging and you don't want to send emails
 simulate_email=False
