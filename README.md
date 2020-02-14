@@ -30,9 +30,14 @@ The script will ask you which paper you've read last, what email address you wan
 
 ### OS X
 
-Useful commands:
+To see if the service is running:
 
     launchctl list | grep eprint
+
+To restart the service:
+
+    launchctl unload ~/Library/LaunchAgents/org.iacr.eprint.notifier.plist
+    launchctl load -w ~/Library/LaunchAgents/org.iacr.eprint.notifier.plist
 
 ## Pull requests
 
