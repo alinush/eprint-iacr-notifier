@@ -1,6 +1,7 @@
 #!/bin/sh
 
 set -e
+#set -x
 
 scriptdir=$(cd $(dirname $0); pwd -P)
 
@@ -42,21 +43,23 @@ fi
 # create log file and dir
 if [ ! -d $logdir ]; then
     sudo mkdir $logdir
-    sudo chown `whoami`:$user_group
-    
-    if [ ! -f "$logfile" ]; then
-        sudo touch "$logfile"
-        sudo chown `whoami`:$user_group "$logfile"
-    else
-        echo "WARNING: Already detected log file at: $logfile. Leaving intact."
-    fi
 fi
+
+if [ ! -f "$logfile" ]; then
+    sudo touch "$logfile"
+else
+    echo "WARNING: Already detected log file at: $logfile. Leaving intact."
+fi
+
+sudo chown `whoami`:$user_group $logdir
+sudo chown `whoami`:$user_group "$logfile"
 
 if [ ! -f "$cronfile" ]; then
     # get details about the Gmail account used to send emails
     read -p "What is the email address that should receive new paper notifications? " NOTIF_EMAIL
     read -p "Gmail account username that should send out the emails: " GMAIL_USER
     read -p "Gmail account password: " GMAIL_PASSWD
+    GMAIL_USER=${GMAIL_USER%"@gmail.com"}   # in case user gives extra @gmail.com
     GMAIL_ADDR="$GMAIL_USER@gmail.com"
 fi
 
@@ -72,7 +75,7 @@ if [ "$OS" = "OSX" ]; then
     <string>org.iacr.eprint.notifier</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/local/bin/python2.7</string>
+        <string>/usr/local/bin/python3</string>
         <string>/usr/local/bin/eprint-iacr-notifier.py</string>
         <string>$NOTIF_EMAIL</string>
         <string>$GMAIL_ADDR</string>

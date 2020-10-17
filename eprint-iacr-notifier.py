@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 from bs4 import BeautifulSoup
 from email.mime.multipart import MIMEMultipart
@@ -9,17 +9,17 @@ import bs4
 import datetime
 import smtplib
 import sys
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
 def get_url(url):
-    print "Downloading page at", url, "...",
-    response = urllib2.urlopen(url)
+    print("Downloading page at", url, "...")
+    response = urllib.request.urlopen(url)
     html = response.read()
-    print " Done."
+    print(" Done.")
     return html
 
 def dedup_spaces(string):
-    return u" ".join(string.split()).strip()
+    return " ".join(string.split()).strip()
 
 # paper IDs in URLs need to be padded with zeros
 # e.g., 1 should be 001
@@ -60,15 +60,15 @@ def process_paper(base_url, paper_id, parser):
         elif type(curr_paragraph) is bs4.element.NavigableString:
             par = dedup_spaces(curr_paragraph)
         else:
-            print "ERROR: I need to better understand BeautifoulSoup"
+            print("ERROR: I need to better understand BeautifoulSoup")
             sys.exit(1)
 
         if par == "Category / Keywords:":
             break
 
         if len(par) > 0:
-            assert(type(par) is unicode)
-            abstract += u"\n\n" + par
+            assert(type(par) is str)
+            abstract += "\n\n" + par
 
         curr_paragraph = curr_paragraph.next_sibling
 
@@ -83,7 +83,7 @@ def process_paper(base_url, paper_id, parser):
     return title, authors, abstract, pdflink
     
 def test_gmail(username, passwd):
-    print "Testing " + username + "@gmail.com with password '" + passwd + "'"
+    print("Testing " + username + "@gmail.com with password '" + passwd + "'")
     server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
     server.login(username, passwd);
     server.quit()
@@ -93,7 +93,7 @@ script_name = sys.argv[0]
 del sys.argv[0]
 
 if len(sys.argv) < 4:
-    print "Usage:", script_name, "<notified-email-address[,extra addresses]> <sender-Gmail-address> <sender-Gmail-password> <conf-file> [<only-simulate-email>] [<do-not-update-conf>]"
+    print("Usage:", script_name, "<notified-email-address[,extra addresses]> <sender-Gmail-address> <sender-Gmail-password> <conf-file> [<only-simulate-email>] [<do-not-update-conf>]")
     sys.exit(1)
 
 notified_email = sys.argv[0]
@@ -107,8 +107,8 @@ conf_file = sys.argv[0]
 del sys.argv[0]
 
 now = datetime.datetime.now()
-print "Time:", now.strftime("%Y-%m-%d %H:%M")
-print "Notified email(s):", notified_email
+print("Time:", now.strftime("%Y-%m-%d %H:%M"))
+print("Notified email(s):", notified_email)
 
 # please set to true when you are debugging and you don't want to send emails
 simulate_email=False
@@ -118,14 +118,14 @@ simulate_conf_update=False
 if len(sys.argv) > 0:
     simulate_email=(sys.argv[0].lower() == "true" or sys.argv[0] == "1")
     del sys.argv[0]
-    print "Simulate email sending?", simulate_email
+    print("Simulate email sending?", simulate_email)
 
     if len(sys.argv) > 0:
         simulate_conf_update=(sys.argv[0].lower() == "true" or sys.argv[0] == "1")
         del sys.argv[0]
-        print "Do NOT update conf?", simulate_conf_update
+        print("Do NOT update conf?", simulate_conf_update)
 
-    print
+    print()
 
 if simulate_email == False:
     test_gmail(sender_gmail_username, sender_gmail_passw)
@@ -141,11 +141,11 @@ last_paper_id = f.readline()
 url = "http://eprint.iacr.org/" + str(year) + "/"
 
 if last_paper_id == '':
-    print "ERROR: '" +  conf_file + "' file is empty. Please type the paper ID that you want to start from."
+    print("ERROR: '" +  conf_file + "' file is empty. Please type the paper ID that you want to start from.")
     sys.exit(1)
 
 last_paper_id = int(last_paper_id)
-print "Last paper ID:", last_paper_id
+print("Last paper ID:", last_paper_id)
 
 # download eprint index
 index_html = get_url(url)
@@ -156,8 +156,8 @@ soup = BeautifulSoup(index_html, parser)
 #print "New paper IDs:"
 skipped = []    # keep track of skipped links, for debugging purposes
 new_last_paper_id = last_paper_id
-email_html=u"Hey there,<br /><br />\nNew papers have been published on the Cryptology ePrint Archive!<br /><br />\n"
-email_text=u"Hey there,\n\nNew papers have been published on the Cryptology ePrint Archive!\n\n"
+email_html="Hey there,<br /><br />\nNew papers have been published on the Cryptology ePrint Archive!<br /><br />\n"
+email_text="Hey there,\n\nNew papers have been published on the Cryptology ePrint Archive!\n\n"
 firstPaper = True
 for link in reversed(soup.find_all('a')):
     link = link.get('href')
@@ -185,42 +185,42 @@ for link in reversed(soup.find_all('a')):
         title, authors, abstract, pdflink = process_paper(url, paper_id, parser)
         new_last_paper_id = max(paper_id, new_last_paper_id)
             
-        email_html += u"\n"
+        email_html += "\n"
         if firstPaper == False:
-            email_html += u"<hr /><br />\n"
-        email_html += u"<b>Title:</b> " + title + " (" + format_paper_id(paper_id) + " <a href=\"" + pdflink + "\">PDF</a>)<br />\n"
-        email_html += u"<b>Authors:</b> " + authors + "<br />\n"
-        email_html += u"<b><a href=\"" + url + format_paper_id(paper_id) + "\">Abstract</a>:</b> " + abstract.replace("\n\n", "<br /><br />\n\n") + "<br /><br />\n"
+            email_html += "<hr /><br />\n"
+        email_html += "<b>Title:</b> " + title + " (" + format_paper_id(paper_id) + " <a href=\"" + pdflink + "\">PDF</a>)<br />\n"
+        email_html += "<b>Authors:</b> " + authors + "<br />\n"
+        email_html += "<b><a href=\"" + url + format_paper_id(paper_id) + "\">Abstract</a>:</b> " + abstract.replace("\n\n", "<br /><br />\n\n") + "<br /><br />\n"
 
-        email_text += u"\n"
-        email_text += u"Title: " + title + "\n"
-        email_text += u"Authors:  " + authors + "\n"
-        email_text += u"Link: " + pdflink + "\n"
-        email_text += u"Abstract: " + abstract + "\n\n"
-        email_text += u"-----------------"
-        email_text += u"\n\n"
+        email_text += "\n"
+        email_text += "Title: " + title + "\n"
+        email_text += "Authors:  " + authors + "\n"
+        email_text += "Link: " + pdflink + "\n"
+        email_text += "Abstract: " + abstract + "\n\n"
+        email_text += "-----------------"
+        email_text += "\n\n"
 
         firstPaper = False
 
 
 # if there were new papers, email them to the right person
 if new_last_paper_id > last_paper_id:
-    email_text += u"Cheers,\nThe Crypto eprint whisperer\nhttps://github.com/alinush/eprint-iacr-notifier\n\nMay Alice and Bob forever talk securely."
+    email_text += "Cheers,\nThe Crypto eprint whisperer\nhttps://github.com/alinush/eprint-iacr-notifier\n\nMay Alice and Bob forever talk securely."
 
-    email_html += u"\n"
-    email_html += u"Cheers,<br />\nThe Crypto eprint whisperer<br/>\n"
-    email_html += u"GitHub: <a href=\"https://github.com/alinush/eprint-iacr-notifier\">https://github.com/alinush/eprint-iacr-notifier</a><br /><br/>\n"
-    email_html += u"<i>May the hardness of discrete log forever be with you.</i>"
+    email_html += "\n"
+    email_html += "Cheers,<br />\nThe Crypto eprint whisperer<br/>\n"
+    email_html += "GitHub: <a href=\"https://github.com/alinush/eprint-iacr-notifier\">https://github.com/alinush/eprint-iacr-notifier</a><br /><br/>\n"
+    email_html += "<i>May the hardness of discrete log forever be with you.</i>"
 
     email_html = email_html.strip()
     email_text = email_text.strip()
 
-    print
-    print "Emailing " + notified_email + ":"
-    print
+    print()
+    print("Emailing " + notified_email + ":")
+    print()
     # Must encode to UTF8 before printing. Otherwise some Unicode strings will print fine to stdout, but not when redirected to a file.
-    print email_html.encode('utf-8')
-    print
+    print(email_html.encode('utf-8'))
+    print()
 
     # craft MIME email
     mime_email = MIMEMultipart('alternative')
@@ -246,9 +246,9 @@ if new_last_paper_id > last_paper_id:
             mime_email.as_string())
         server.quit()
 
-        print "Sent email with title '" + mime_email['Subject'] + "' successfully to:", notified_email
+        print("Sent email with title '" + mime_email['Subject'] + "' successfully to:", notified_email)
     else:
-        print "Simulating, so no email was sent."
+        print("Simulating, so no email was sent.")
 
     if simulate_conf_update == False:
         # write the new last paper ID in the conf file (and rewrite the same year)
@@ -257,6 +257,6 @@ if new_last_paper_id > last_paper_id:
         f.write(str(year) + '\n')
         f.write(str(new_last_paper_id) + '\n')
         f.close()
-        print "Wrote last ID to conf file:", new_last_paper_id
+        print("Wrote last ID to conf file:", new_last_paper_id)
     else:
-        print "Simulating so conf file was not updated"
+        print("Simulating so conf file was not updated")
