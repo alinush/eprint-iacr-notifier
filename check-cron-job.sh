@@ -16,7 +16,11 @@ if [ "$OS" = "OSX" ]; then
 
     echo "Cronfile at '$cronfile':"
     echo "========================"
-    cat $cronfile
+    if [ -f "$cronfile" ]; then
+        cat $cronfile
+    else
+        echo "ERROR: No launchd .plist file at '$cronfile'"
+    fi
     echo
 
     echo "Last run in logfile at '$logfile':"
@@ -25,7 +29,7 @@ if [ "$OS" = "OSX" ]; then
         last_run_line=`grep -n ^Time: /var/log/eprint/out+err.log | tail -n 1 | cut -f 1 -d:`
 
         if [ -n "$last_run_line" ]; then
-            tail -n +850 $logfile
+            tail -n +$last_run_line $logfile
         fi
     else
         echo "ERROR: No $logfile in $logdir. List of files in $logdir is:"
