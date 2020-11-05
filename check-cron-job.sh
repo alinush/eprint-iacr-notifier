@@ -23,19 +23,23 @@ if [ "$OS" = "OSX" ]; then
     fi
     echo
 
-    echo "Last run in logfile at '$logfile':"
-    echo "=================================="
-    if [ -f $logfile ]; then
-        last_run_line=`grep -n ^Time: /var/log/eprint/out+err.log | tail -n 1 | cut -f 1 -d:`
+    if [ -d "$logdir" ]; then
+        echo "Last run in logfile at '$logfile':"
+        echo "=================================="
+        if [ -f $logfile ]; then
+            last_run_line=`grep -n ^Time: /var/log/eprint/out+err.log | tail -n 1 | cut -f 1 -d:`
 
-        if [ -n "$last_run_line" ]; then
-            tail -n +$last_run_line $logfile
+            if [ -n "$last_run_line" ]; then
+                tail -n +$last_run_line $logfile
+            fi
+        else
+            echo "ERROR: No $logfile in $logdir. List of files in $logdir is:"
+            ls -l $logdir
         fi
+        echo
     else
-        echo "ERROR: No $logfile in $logdir. List of files in $logdir is:"
-        ls -l $logdir
+        echo "ERROR: No logdir in $logdir"
     fi
-    echo
 
     echo "Status in 'launchctl list':"
     echo "==========================="
