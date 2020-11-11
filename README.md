@@ -5,6 +5,7 @@ Daily email reminders with the newest [Cryptology ePrint Archive](https://eprint
 
 ## TODO
 
+ - OS X seems to delete /var/log/eprint after every reboot and so the script launch fails after reboot
  - https://eprint.iacr.org/2019/1172 has a ``<`` sign in the abstract that throws off our parser
  - For now, the script uses a throwaway Gmail account to send emails, because it was the easiest way to get this running. This should be made more flexible.
  - Better logging library
